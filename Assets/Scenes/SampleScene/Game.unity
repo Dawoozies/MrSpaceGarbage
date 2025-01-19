@@ -619,7 +619,7 @@ Transform:
   m_GameObject: {fileID: 837649617}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -12.46, y: -2.16, z: 0}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -665,9 +665,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 10
   maxSlopeAngle: 45
-  jumpImpulse: 0.25
+  jumpImpulse: 20
   maxJetpackFuel: 100
   jetpackFuel: 100
+  jetpackSpeed: 75
   fuelUseSpeed: 200
   refuelSpeed: 50
   vacBoxEntity: {fileID: 424221269}

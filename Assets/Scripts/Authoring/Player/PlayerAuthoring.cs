@@ -9,6 +9,7 @@ public class PlayerAuthoring : MonoBehaviour
     public float jumpImpulse;
     public float maxJetpackFuel;
     public float jetpackFuel;
+    public float jetpackSpeed;
     public float fuelUseSpeed;
     public float refuelSpeed;
     [Header("Player Vac")]
@@ -28,6 +29,7 @@ public class PlayerAuthoringBaker : Baker<PlayerAuthoring>
             jumpImpulse = authoring.jumpImpulse,
             maxJetpackFuel = authoring.jetpackFuel,
             jetpackFuel = authoring.jetpackFuel,
+            jetpackSpeed = authoring.jetpackSpeed,
             fuelUseSpeed = authoring.fuelUseSpeed,
             refuelSpeed = authoring.refuelSpeed,
         });
@@ -36,5 +38,6 @@ public class PlayerAuthoringBaker : Baker<PlayerAuthoring>
             strength = authoring.strength,
             vacBoxEntity = GetEntity(authoring.vacBoxEntity, TransformUsageFlags.Dynamic),
         });
+        AddBuffer<GroundElement>(entity);
     }
 }

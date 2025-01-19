@@ -10,6 +10,7 @@ using Ray = Latios.Psyshock.Ray;
 [UpdateInGroup(typeof(SimulationSystemGroup), OrderLast = true)]
 public partial class ReadInputSystem : SubSystem
 {
+
     Camera mainCamera;
     const float maxCastDist = 250f;
     public override void OnNewScene()

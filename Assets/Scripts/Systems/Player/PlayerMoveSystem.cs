@@ -34,14 +34,19 @@ public partial struct PlayerMoveSystem : ISystem
             deltaTime = Time.DeltaTime,
         }.Schedule();
 
-        //var playerLayer = latiosWorld.sceneBlackboardEntity.GetCollectionComponent<PlayerCollisionLayer>().layer;
-        //var staticEnvironmentLayer = latiosWorld.sceneBlackboardEntity.GetCollectionComponent<StaticEnvironmentCollisionLayer>().layer;
-        //var playerGroundCheckJob = new PlayerGroundCheck
-        //{
-        //    bodyLookup = GetComponentLookup<RigidBody>(false),
-        //    playerMovementLookup = GetComponentLookup<PlayerMovement>(false),
-        //};
-        //state.Dependency = Physics.FindPairs(playerLayer, staticEnvironmentLayer, playerGroundCheckJob).ScheduleParallel(state.Dependency);
+        var playerLayer = latiosWorld.sceneBlackboardEntity.GetCollectionComponent<PlayerCollisionLayer>().layer;
+        var staticEnvironmentLayer = latiosWorld.sceneBlackboardEntity.GetCollectionComponent<StaticEnvironmentCollisionLayer>().layer;
+        var playerGroundCheckJob = new PlayerGroundCollisionBuffer
+        {
+            bodyLookup = GetComponentLookup<RigidBody>(false),
+            playerMovementLookup = GetComponentLookup<PlayerMovement>(false),
+            groundBufferLookup = GetBufferLookup<GroundElement>(false),
+        };
+        state.Dependency = Physics.FindPairs(playerLayer, staticEnvironmentLayer, playerGroundCheckJob).ScheduleParallel(state.Dependency);
+
+        new PlayerGroundBufferCheck
+        {
+        }.ScheduleParallel();
     }
     [BurstCompile]
     partial struct PlayerMove : IJobEntity
@@ -53,13 +58,26 @@ public partial struct PlayerMoveSystem : ISystem
         {
             var moveInput = moveInputLookup[sbe];
             rigidBody.velocity.linear.x = moveInput.move.x * playerMovement.moveSpeed;
-
-            if(moveInput.jumpInput > 0 && playerMovement.jetpackFuel > 0)
+            
+            if(playerMovement.jumpCooldown <= 0f && playerMovement.grounded && moveInput.jumpInput > 0f)
             {
                 rigidBody.velocity.linear.y += playerMovement.jumpImpulse;
-                playerMovement.jetpackFuel -= deltaTime * playerMovement.fuelUseSpeed;
+                playerMovement.jumpCooldown = 0.02f;
+            }
+            if(playerMovement.jumpCooldown > 0f)
+            {
+                if(!playerMovement.grounded)
+                {
+                    playerMovement.jumpCooldown = 0f;
+                }
+                playerMovement.jumpCooldown -= deltaTime;
             }
 
+            if (!playerMovement.grounded && moveInput.jumpInput > 0 && playerMovement.jetpackFuel > 0)
+            {
+                rigidBody.velocity.linear.y += playerMovement.jetpackSpeed * deltaTime;
+                playerMovement.jetpackFuel -= deltaTime * playerMovement.fuelUseSpeed;
+            }
 
             if (moveInput.jumpInput <= 0 && playerMovement.jetpackFuel < playerMovement.maxJetpackFuel)
             {
@@ -67,31 +85,41 @@ public partial struct PlayerMoveSystem : ISystem
             }
         }
     }
-    //struct PlayerGroundCheck : IFindPairsProcessor
-    //{
-    //    public PhysicsComponentLookup<RigidBody> bodyLookup;
-    //    public PhysicsComponentLookup<PlayerMovement> playerMovementLookup;
+    struct PlayerGroundCollisionBuffer : IFindPairsProcessor
+    {
+        public PhysicsComponentLookup<RigidBody> bodyLookup;
+        public PhysicsComponentLookup<PlayerMovement> playerMovementLookup;
+        public PhysicsBufferLookup<GroundElement> groundBufferLookup; 
+        public void Execute(in FindPairsResult result)
+        {
+            var playerRigidBody = bodyLookup[result.entityA];
+            var playerMovement = playerMovementLookup[result.entityA];
+            var groundBuffer = groundBufferLookup[result.entityA];
+            var maxDistance = UnitySim.MotionExpansion.GetMaxDistance(in playerRigidBody.motionExpansion);
+            if (Physics.DistanceBetween(result.colliderA, result.transformA, result.colliderB, result.transformB, maxDistance, out var hitData))
+            {
+                var angleBetween = math.acos(math.dot(math.up(), hitData.normalB)) * math.TODEGREES;
+                if (angleBetween <= playerMovement.maxSlopeAngle)
+                {
+                    groundBuffer.Add(new GroundElement { groundEntity = result.entityB});
+                    return;
+                }
+            }
+        }
+    }
+    [BurstCompile]
+    partial struct PlayerGroundBufferCheck : IJobEntity
+    {
+        public void Execute(ref DynamicBuffer<GroundElement> groundBuffer, ref PlayerMovement playerMovement)
+        {
+            if (groundBuffer.Length <= 0)
+            {
+                playerMovement.grounded = false;
+                return;
+            }
 
-    //    public void Execute(in FindPairsResult result)
-    //    {
-    //        var playerRigidBody = bodyLookup[result.entityA];
-    //        var playerMovement = playerMovementLookup[result.entityA];
-
-    //        var maxDistance = UnitySim.MotionExpansion.GetMaxDistance(in playerRigidBody.motionExpansion);
-            
-    //        if(Physics.DistanceBetween(result.colliderA, result.transformA, result.colliderB, result.transformB, maxDistance, out var hitData))
-    //        {
-    //            var angleBetween = math.acos(math.dot(math.up(), hitData.normalB)) * math.TODEGREES;
-    //            if(angleBetween <= playerMovement.maxSlopeAngle)
-    //            {
-    //                playerMovement.grounded = true;
-    //                playerMovementLookup[result.entityA] = playerMovement;
-    //                return;
-    //            }
-    //        }
-
-    //        playerMovement.grounded = false;
-    //        playerMovementLookup[result.entityA] = playerMovement;
-    //    }
-    //}
+            playerMovement.grounded = true;
+            groundBuffer.Clear();
+        }
+    }
 }
