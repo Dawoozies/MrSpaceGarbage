@@ -17,6 +17,16 @@ public struct PlayerMovement : IComponentData
     public bool grounded;
     public float maxSlopeAngle;
 }
+
+public struct PlayerVac : IComponentData
+{
+    public float strength;
+    public Entity vacBoxEntity;
+
+}
+
+public struct VacTag : IComponentData { }
+
 public partial struct PlayerCollisionLayer : ICollectionComponent
 {
     public CollisionLayer layer;

@@ -11,6 +11,9 @@ public class PlayerAuthoring : MonoBehaviour
     public float jetpackFuel;
     public float fuelUseSpeed;
     public float refuelSpeed;
+    [Header("Player Vac")]
+    public GameObject vacBoxEntity;
+    public float strength;
 }
 public class PlayerAuthoringBaker : Baker<PlayerAuthoring>
 {
@@ -27,6 +30,11 @@ public class PlayerAuthoringBaker : Baker<PlayerAuthoring>
             jetpackFuel = authoring.jetpackFuel,
             fuelUseSpeed = authoring.fuelUseSpeed,
             refuelSpeed = authoring.refuelSpeed,
+        });
+        AddComponent(entity, new PlayerVac
+        {
+            strength = authoring.strength,
+            vacBoxEntity = GetEntity(authoring.vacBoxEntity, TransformUsageFlags.Dynamic),
         });
     }
 }

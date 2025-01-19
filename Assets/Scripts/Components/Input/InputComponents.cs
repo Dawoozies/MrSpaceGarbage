@@ -51,3 +51,9 @@ public struct MoveInput : IComponentData
     public float2 move;
     public float jumpInput;
 }
+public struct AimInput : IComponentData
+{
+    public float2 aim;
+    public float vac;
+    public float aimAngle;
+}

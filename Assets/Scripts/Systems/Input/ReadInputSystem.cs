@@ -15,6 +15,7 @@ public partial class ReadInputSystem : SubSystem
     public override void OnNewScene()
     {
         mainCamera = Camera.main;
+        latiosWorld.sceneBlackboardEntity.AddComponentData(new AimInput());
     }
     protected override void OnUpdate()
     {
@@ -24,11 +25,15 @@ public partial class ReadInputSystem : SubSystem
 
         var move = float2.zero;
         var jumpInput = 0f;
+        var aimInput = float2.zero;
+        var vacInput = 0f;
 
-        if(gamepad != null)
+        if (gamepad != null)
         {
             move = gamepad.leftStick.ReadValue();
             jumpInput = gamepad.aButton.ReadValue();
+            aimInput = gamepad.rightStick.ReadValue();
+            vacInput = gamepad.rightTrigger.ReadValue() - gamepad.leftTrigger.ReadValue();
         }
         else
         {
@@ -46,6 +51,12 @@ public partial class ReadInputSystem : SubSystem
             move = move,
             jumpInput = jumpInput,
         }.ScheduleParallel();
+
+        new AimInputJob
+        {
+            aim = aimInput,
+            vac = vacInput,
+        }.ScheduleParallel();
     }
     [BurstCompile]
     partial struct MoveInputJob : IJobEntity
@@ -56,6 +67,19 @@ public partial class ReadInputSystem : SubSystem
         {
             moveInput.move = move;
             moveInput.jumpInput = jumpInput;
+        }
+    }
+
+    [BurstCompile]
+    partial struct AimInputJob : IJobEntity
+    {
+        public float2 aim;
+        public float vac;
+        public void Execute(ref AimInput aimInput)
+        {
+            aimInput.aim = aim;
+            aimInput.vac = vac;
+            aimInput.aimAngle = math.atan2(aim.y, aim.x);
         }
     }
 }
