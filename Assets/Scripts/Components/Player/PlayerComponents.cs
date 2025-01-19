@@ -1,0 +1,25 @@
+using Latios.Psyshock;
+using Latios;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Jobs;
+using Unity.Mathematics;
+
+public struct PlayerTag : IComponentData { }
+public struct PlayerMovement : IComponentData
+{
+    public float moveSpeed;
+    public float jumpImpulse;
+    public float maxJetpackFuel;
+    public float jetpackFuel;
+    public float fuelUseSpeed;
+    public float refuelSpeed;
+    public bool grounded;
+    public float maxSlopeAngle;
+}
+public partial struct PlayerCollisionLayer : ICollectionComponent
+{
+    public CollisionLayer layer;
+
+    public JobHandle TryDispose(JobHandle inputDeps) => layer.IsCreated ? layer.Dispose(inputDeps) : inputDeps;
+}
